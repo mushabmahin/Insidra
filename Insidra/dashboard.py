@@ -8,21 +8,26 @@ from stream_generator import generate_log
 from model.preprocess import preprocess_data
 from model.anomaly_model import train_model, predict
 from model.risk_engine import *
+from mailer import send_soc_email
 
 st.set_page_config(layout="wide", page_title="Live Threat Monitor")
 
 st.title("🛡️ Real-Time Insider Threat Detection System")
 
 start = st.sidebar.button("▶ Start Monitoring")
+fast_forward = st.sidebar.button("⏩ Fast Forward")
 
 st.sidebar.info("Simulating real-time log ingestion with adaptive behavior")
 
-if start:
+if start or fast_forward:
 
     logs = []
     placeholder = st.empty()
 
-    st.success("🟢 Monitoring Active")
+    if fast_forward:
+        st.success("⏩ Fast Forwarding Data Processing...")
+    else:
+        st.success("🟢 Monitoring Active")
 
     # -------------------------
     # INITIAL TRAINING BUFFER
@@ -74,6 +79,9 @@ if start:
         # SUSPICIOUS LOGS
         # -------------------------
         suspicious_df = df[df["risk_score"] >= 40]
+
+        if fast_forward and i < 199:
+            continue
 
         # -------------------------
         # LIVE UI
@@ -144,7 +152,8 @@ if start:
             else:
                 st.success("No suspicious activity detected")
 
-        time.sleep(0.8)
+        if not fast_forward:
+            time.sleep(0.8)
 
     # -------------------------
     # FINAL REPORT
@@ -187,7 +196,20 @@ if start:
                 if col3.button(f"Isolate Device", key=f"iso_{u}"):
                     st.success(f"🛡️ CrowdStrike: Device isolation initiated for '{u}'.")
                 if col4.button(f"Notify SOC", key=f"soc_{u}"):
-                    st.success(f"📩 PagerDuty: Alert payload dispatched for '{u}'.")
+                    # Get the most recent logs for this user to extract the reasons and specific risk score
+                    user_history = df[df["emp_id"] == u]
+                    latest_state = user_history.iloc[-1]
+                    
+                    success, msg_response = send_soc_email(
+                        user_id=u,
+                        risk_score=latest_state["risk_score"],
+                        reasons=latest_state["reasons"]
+                    )
+                    
+                    if success:
+                        st.success(f"📩 {msg_response}")
+                    else:
+                        st.error(f"❌ {msg_response}")
     else:
         st.success("No critical users require immediate remediation.")
 
