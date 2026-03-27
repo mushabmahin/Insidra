@@ -16,11 +16,11 @@ days = 20
 
 def normal_behavior(user, date):
     base_login = 8 + int(user["id"][-1]) % 3  # slight variation per user
+    login_hour = random.randint(base_login, base_login + 2)
 
     return {
-        "user_id": user["id"],
-        "timestamp": date,
-        "login_hour": random.randint(base_login, base_login + 2),
+        "emp_id": user["id"],
+        "timestamp": date + timedelta(hours=login_hour),
         "files_accessed": random.randint(10, 20),
         "file_sensitivity": "low",
         "location": "Kerala",
@@ -31,10 +31,10 @@ def normal_behavior(user, date):
 
 
 def night_behavior(user, date):
+    login_hour = random.randint(1, 3)
     return {
-        "user_id": user["id"],
-        "timestamp": date,
-        "login_hour": random.randint(1, 3),
+        "emp_id": user["id"],
+        "timestamp": date + timedelta(hours=login_hour),
         "files_accessed": random.randint(10, 20),
         "file_sensitivity": "low",
         "location": "Kerala",
@@ -75,9 +75,8 @@ def insider_behavior(user, day, date):
         failed = random.randint(5, 8)
 
     return {
-        "user_id": user["id"],
-        "timestamp": date,
-        "login_hour": login_hour,
+        "emp_id": user["id"],
+        "timestamp": date + timedelta(hours=login_hour),
         "files_accessed": files,
         "file_sensitivity": sensitivity,
         "location": location,
