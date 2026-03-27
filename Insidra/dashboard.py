@@ -155,6 +155,12 @@ if start or fast_forward:
         if not fast_forward:
             time.sleep(0.8)
 
+    # Store Final DataFrame in Session State to prevent reset on button UI interactions
+    st.session_state.final_df = df
+
+if "final_df" in st.session_state:
+    df = st.session_state.final_df
+
     # -------------------------
     # FINAL REPORT
     # -------------------------

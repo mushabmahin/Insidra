@@ -4,10 +4,11 @@ from email.mime.multipart import MIMEMultipart
 import os
 from dotenv import load_dotenv
 
-# Load environment variables from the .env file
-load_dotenv()
-
 def send_soc_email(user_id, risk_score, reasons):
+    # Force load environment variables dynamically when the function runs
+    dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+    load_dotenv(dotenv_path, override=True)
+
     # Retrieve credentials from environment variables for security
     sender_email = os.environ.get("SMTP_EMAIL", "yoursystem@gmail.com")
     sender_password = os.environ.get("SMTP_PASSWORD", "your_app_password")
