@@ -9,6 +9,7 @@ from model.preprocess import preprocess_data
 from model.anomaly_model import train_model, predict
 from model.risk_engine import *
 from mailer import send_soc_email
+from remediation import suspend_account, force_mfa, isolate_device, get_remediation_summary_df, get_applied_actions
 
 st.set_page_config(layout="wide", page_title="Live Threat Monitor")
 
@@ -193,14 +194,25 @@ if "final_df" in st.session_state:
         for u in critical_users:
             with st.expander(f"🚨 Action Panel: {u} (CRITICAL RISK)", expanded=True):
                 st.warning(f"User {u} has exceeded risk thresholds. Select an automated response:")
+                applied = get_applied_actions(u)
+                
                 col1, col2, col3, col4 = st.columns(4)
                 
-                if col1.button(f"Suspend Account", key=f"susp_{u}"):
-                    st.success(f"✅ Active Directory: User '{u}' has been suspended.")
-                if col2.button(f"Force MFA", key=f"mfa_{u}"):
-                    st.success(f"📱 Okta: Forced Re-Authentication for '{u}'.")
-                if col3.button(f"Isolate Device", key=f"iso_{u}"):
-                    st.success(f"🛡️ CrowdStrike: Device isolation initiated for '{u}'.")
+                if col1.button(f"Suspend Account", key=f"susp_{u}", disabled="Suspend Account" in applied):
+                    if suspend_account(u):
+                        st.success(f"✅ Active Directory: User '{u}' has been suspended.")
+                        time.sleep(0.5)
+                        st.rerun()
+                if col2.button(f"Force MFA", key=f"mfa_{u}", disabled="Force MFA" in applied):
+                    if force_mfa(u):
+                        st.success(f"📱 Okta: Forced Re-Authentication for '{u}'.")
+                        time.sleep(0.5)
+                        st.rerun()
+                if col3.button(f"Isolate Device", key=f"iso_{u}", disabled="Isolate Device" in applied):
+                    if isolate_device(u):
+                        st.success(f"🛡️ CrowdStrike: Device isolation initiated for '{u}'.")
+                        time.sleep(0.5)
+                        st.rerun()
                 if col4.button(f"Notify SOC", key=f"soc_{u}"):
                     # Get the most recent logs for this user to extract the reasons and specific risk score
                     user_history = df[df["emp_id"] == u]
@@ -218,6 +230,16 @@ if "final_df" in st.session_state:
                         st.error(f"❌ {msg_response}")
     else:
         st.success("No critical users require immediate remediation.")
+
+    # -------------------------
+    # AUDIT LOG
+    # -------------------------
+    st.markdown("### 📜 Live Remediation Audit Log")
+    audit_df = get_remediation_summary_df()
+    if not audit_df.empty:
+        st.dataframe(audit_df, use_container_width=True)
+    else:
+        st.info("No automations have been triggered yet.")
 
     # -------------------------
     # ATTACK STORY
