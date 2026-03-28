@@ -89,7 +89,7 @@ if start or fast_forward:
         # -------------------------
         with placeholder.container():
 
-            st.subheader("📊 System Metrics")
+            st.subheader("System Metrics")
 
             col1, col2, col3 = st.columns(3)
 
@@ -101,14 +101,14 @@ if start or fast_forward:
 
             # ALERT SYSTEM
             if latest["risk_score"] >= 80:
-                st.error("🚨 LIVE THREAT DETECTED")
+                st.error("LIVE THREAT DETECTED")
             elif latest["risk_score"] >= 40:
-                st.warning("⚠️ Suspicious Behavior")
+                st.warning("Suspicious Behavior")
 
             # -------------------------
             # RISK GRAPH
             # -------------------------
-            st.markdown("### 📈 Risk Evolution")
+            st.markdown("### Risk Evolution")
 
             fig = px.line(
                 df,
@@ -124,7 +124,7 @@ if start or fast_forward:
             # DRIFT GRAPH
             # -------------------------
             if "file_drift" in df.columns:
-                st.markdown("### 📊 Behavioral Drift")
+                st.markdown("### Behavioral Drift")
 
                 drift_fig = px.line(
                     df,
@@ -138,7 +138,7 @@ if start or fast_forward:
             # -------------------------
             # SUSPICIOUS LOG TABLE
             # -------------------------
-            st.markdown("### 🚨 Suspicious Activity Logs")
+            st.markdown("### Suspicious Activity Logs")
 
             if not suspicious_df.empty:
                 display_df = suspicious_df.tail(10)[
@@ -165,7 +165,7 @@ if "final_df" in st.session_state:
     # -------------------------
     # FINAL REPORT
     # -------------------------
-    st.markdown("## 📄 Simulation Summary Report")
+    st.markdown("## Simulation Summary Report")
 
     total_events = len(df)
     high_risk = len(df[df["risk_score"] >= 70])
@@ -185,14 +185,14 @@ if "final_df" in st.session_state:
     # -------------------------
     # REMEDIATION ACTIONS
     # -------------------------
-    st.markdown("## 🔐 Automated Remediation Actions")
+    st.markdown("## Automated Remediation Actions")
     st.write("Take immediate action on users exhibiting highly critical behavior.")
     
     critical_users = df[df["risk_score"] >= 70]["emp_id"].unique()
     
     if len(critical_users) > 0:
         for u in critical_users:
-            with st.expander(f"🚨 Action Panel: {u} (CRITICAL RISK)", expanded=True):
+            with st.expander(f"Action Panel: {u} (CRITICAL RISK)", expanded=True):
                 st.warning(f"User {u} has exceeded risk thresholds. Select an automated response:")
                 applied = get_applied_actions(u)
                 
@@ -205,12 +205,12 @@ if "final_df" in st.session_state:
                         st.rerun()
                 if col2.button(f"Force MFA", key=f"mfa_{u}", disabled="Force MFA" in applied):
                     if force_mfa(u):
-                        st.success(f"📱 Okta: Forced Re-Authentication for '{u}'.")
+                        st.success(f"Okta: Forced Re-Authentication for '{u}'.")
                         time.sleep(0.5)
                         st.rerun()
                 if col3.button(f"Isolate Device", key=f"iso_{u}", disabled="Isolate Device" in applied):
                     if isolate_device(u):
-                        st.success(f"🛡️ CrowdStrike: Device isolation initiated for '{u}'.")
+                        st.success(f"CrowdStrike: Device isolation initiated for '{u}'.")
                         time.sleep(0.5)
                         st.rerun()
                 if col4.button(f"Notify SOC", key=f"soc_{u}"):
@@ -225,16 +225,16 @@ if "final_df" in st.session_state:
                     )
                     
                     if success:
-                        st.success(f"📩 {msg_response}")
+                        st.success(f" {msg_response}")
                     else:
-                        st.error(f"❌ {msg_response}")
+                        st.error(f" {msg_response}")
     else:
         st.success("No critical users require immediate remediation.")
 
     # -------------------------
     # AUDIT LOG
     # -------------------------
-    st.markdown("### 📜 Live Remediation Audit Log")
+    st.markdown("### Live Remediation Audit Log")
     audit_df = get_remediation_summary_df()
     if not audit_df.empty:
         st.dataframe(audit_df, use_container_width=True)
@@ -244,7 +244,7 @@ if "final_df" in st.session_state:
     # -------------------------
     # ATTACK STORY
     # -------------------------
-    st.markdown("### 🧠 Attack Analysis")
+    st.markdown("###Attack Analysis")
 
     st.write("""
     Phase 1: Normal behavior  
