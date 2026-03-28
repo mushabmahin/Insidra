@@ -9,6 +9,7 @@ from model.preprocess import preprocess_data
 from model.anomaly_model import train_model, predict
 from model.risk_engine import *
 from mailer import send_soc_email
+from remediation import suspend_account, force_mfa, get_remediation_summary_df, get_applied_actions, load_history
 
 st.set_page_config(layout="wide", page_title="Live Threat Monitor")
 
@@ -16,6 +17,23 @@ st.title("🛡️ Real-Time Insider Threat Detection System")
 
 start = st.sidebar.button("▶ Start Monitoring")
 fast_forward = st.sidebar.button("⏩ Fast Forward")
+
+st.sidebar.markdown("---")
+if st.sidebar.button("🔄 Reset Demo Environment"):
+    import os
+    # Clear the persistent JSON database
+    if os.path.exists("remediation_history.json"):
+        with open("remediation_history.json", "w") as f:
+            f.write("[]")
+    
+    # Clear active session state
+    if "final_df" in st.session_state:
+        del st.session_state["final_df"]
+    st.session_state.whitelist = []
+    st.sidebar.success("✅ Database Wiped. Ready for Judges!")
+    time.sleep(1)
+    st.rerun()
+st.sidebar.markdown("---")
 
 st.sidebar.info("Simulating real-time log ingestion with adaptive behavior")
 
@@ -55,9 +73,16 @@ if start or fast_forward:
     # -------------------------
     # INITIAL TRAINING BUFFER
     # -------------------------
+    # Preload Remediation states (Mock Database)
+    history_records = load_history()
+    suspended_users = {r["user_id"] for r in history_records if r["action"] == "Suspend Account"}
+    mfa_forced_users = {r["user_id"] for r in history_records if r["action"] == "Force MFA"}
+
     for i in range(20):
         if i < len(raw_dicts):
-            logs.append(raw_dicts[i])
+            # Do not inject suspended users even during init
+            if raw_dicts[i]["emp_id"] not in suspended_users:
+                logs.append(raw_dicts[i])
 
     df_init = pd.DataFrame(logs)
     X_scaled, df_init = preprocess_data(df_init)
@@ -74,8 +99,24 @@ if start or fast_forward:
         for j in range(batch_size):
             idx = 20 + i*batch_size + j
             if idx < len(raw_dicts):
-                new_batch.append(raw_dicts[idx])
+                log = raw_dicts[idx]
+                
+                # ENFORCE DATABASE MOCKING
+                if log["emp_id"] in suspended_users:
+                    # Physically simulate Network Block - skip entirely
+                    continue
+                if log["emp_id"] in mfa_forced_users:
+                    # Physically simulate MFA challenge success reducing their suspicion
+                    log["failed_logins"] = 0
+                    if log["session_duration"] > 60:
+                        log["session_duration"] = 15
+                
+                new_batch.append(log)
 
+        # Skip batch extension & processing if all logs were blocked
+        if not new_batch:
+            continue
+            
         logs.extend(new_batch)
 
         df = pd.DataFrame(logs)
@@ -231,12 +272,21 @@ if "final_df" in st.session_state:
             with st.expander(f"Action Panel: {u} (CRITICAL RISK)", expanded=True):
                 st.warning(f"User {u} has exceeded risk thresholds. Select an automated response:")
                 
+                # Fetch dynamically what actions were already applied
+                applied = get_applied_actions(u)
+                
                 col1, col2, col3 = st.columns(3)
                 
-                if col1.button(f"Suspend Account", key=f"susp_{u}"):
-                    st.success(f"✅ Active Directory: User '{u}' has been suspended.")
-                if col2.button(f"Force MFA", key=f"mfa_{u}"):
-                    st.success(f"📱 Okta: Forced Re-Authentication for '{u}'.")
+                if col1.button(f"Suspend Account", key=f"susp_{u}", disabled="Suspend Account" in applied):
+                    if suspend_account(u):
+                        st.success(f"✅ Active Directory: User '{u}' has been suspended. Future logs will be network blocked.")
+                        time.sleep(0.5)
+                        st.rerun()
+                if col2.button(f"Force MFA", key=f"mfa_{u}", disabled="Force MFA" in applied):
+                    if force_mfa(u):
+                        st.success(f"📱 Okta: Forced Re-Authentication for '{u}'.")
+                        time.sleep(0.5)
+                        st.rerun()
                 if col3.button(f"Notify SOC", key=f"soc_{u}"):
                     # Get the most recent logs for this user to extract the reasons and specific risk score
                     user_history = df[df["emp_id"] == u]
@@ -254,6 +304,16 @@ if "final_df" in st.session_state:
                         st.error(f" {msg_response}")
     else:
         st.success("No critical users require immediate remediation.")
+
+    # -------------------------
+    # AUDIT LOG
+    # -------------------------
+    st.markdown("### Live Remediation Audit Log")
+    audit_df = get_remediation_summary_df()
+    if not audit_df.empty:
+        st.dataframe(audit_df, use_container_width=True)
+    else:
+        st.info("No automations have been triggered yet.")
 
     # -------------------------
     # ATTACK STORY
