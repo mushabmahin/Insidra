@@ -144,3 +144,25 @@
 
 ### Issues Faced
 - None
+
+## 06:22
+
+### Features Added
+- Integrated automated remediation (`remediation.py`) and alert mechanisms (`alert_system.py`)
+- Added email/mailer configuration support (`mailer.py`, `.env.example`)
+- Updated interactive dashboard with embedded actionable UI buttons
+- Added `python-dotenv` dependency
+- Extracted `suspicious_logs.csv` to isolate high-risk behavior
+
+### Files Modified
+- Insidra/alert_system.py
+- Insidra/dashboard.py
+- Insidra/mailer.py
+- Insidra/model/alert_system.py
+- Insidra/remediation.py
+- Insidra/.env.example
+- Insidra/data/suspicious_logs.csv
+- Insidra/requirements.txt
+
+### Issues Faced
+- Fixed state and synchronization bugs on the refreshed interactive dashboard
