@@ -112,8 +112,8 @@ Please ensure all tests pass and follow the project's code style guidelines.
 For questions, feedback, or support, please reach out:
 
 - **GitHub Issues**: [Report a bug or suggest a feature](https://github.com/mushabmahin/Insidra/issues)
-- **Email**: [mushabmahin@example.com](mailto:mushabmahin@example.com)
-- **Twitter**: [@mushabmahin](https://twitter.com/mushabmahin)
+- **Email**: [mushabmahin777@gmail.com](mailto:mushabmahin777@gmail.com)
+- **Twitter**: [@_mushab_mahin](https://twitter.com/_mushab_mahin)
 
 ---
 
